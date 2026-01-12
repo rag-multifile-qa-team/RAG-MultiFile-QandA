@@ -17,13 +17,10 @@ from streamlit_mic_recorder import mic_recorder
 from faster_whisper import WhisperModel
 import pyttsx3
 
-
-
 # Page config (MUST be first Streamlit call)
 
 st.set_page_config(page_title="Ask RAG - Multi-file Support", page_icon="*", layout="wide")
 st.title("Ask RAG - Multi-file Support")
-
 
 
 # Device detection
@@ -35,9 +32,9 @@ def get_device() -> str:
 
     # Apple Silicon (MPS)
     if (
-        hasattr(torch.backends, "mps")
-        and torch.backends.mps.is_available()
-        and torch.backends.mps.is_built()
+            hasattr(torch.backends, "mps")
+            and torch.backends.mps.is_available()
+            and torch.backends.mps.is_built()
     ):
         return "mps"
 
@@ -45,7 +42,6 @@ def get_device() -> str:
 
 
 def get_whisper_runtime(device: str):
-   
     if device == "cuda":
         return "cuda", "float16"
 
@@ -59,6 +55,7 @@ TORCH_DEVICE = torch.device(DEVICE)
 
 
 # Sidebar: Checklist + Settings
+
 
 with st.sidebar:
     st.header("Checklist")
@@ -96,12 +93,12 @@ with st.sidebar:
     # Whisper settings
     whisper_size = st.selectbox("Whisper model size", ["small", "medium"], index=0)
     whisper_device, whisper_compute = get_whisper_runtime(DEVICE)
-    st.caption(f"🎙️ Whisper runtime: {whisper_device.upper()} / {whisper_compute}")
+    st.caption(" 🎙️")
+    st.caption(f"Whisper runtime: {whisper_device.upper()} / {whisper_compute}")
 
 
 
-# Embeddings (device-aware)  
-
+# Embeddings (device-aware)
 embedding = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2",
     model_kwargs={"device": DEVICE},  # cuda / cpu / mps
@@ -109,9 +106,7 @@ embedding = HuggingFaceEmbeddings(
 )
 
 
-
-# Cached Whisper model (single source of truth) 
-
+# Cached Whisper model (single source of truth)
 @st.cache_resource
 def load_whisper_model(size: str, device: str, compute_type: str):
     return WhisperModel(size, device=device, compute_type=compute_type)
@@ -119,19 +114,14 @@ def load_whisper_model(size: str, device: str, compute_type: str):
 
 whisper_model = load_whisper_model(whisper_size, whisper_device, whisper_compute)
 
-
-
 # Setup LLM (Ollama)
-
 llm = Ollama(
     model=ollama_model.strip(),
     base_url=ollama_base_url.strip()
 )
 
 
-
 # Modification: Multilingual instruction
-
 def add_language_instruction(user_text: str) -> str:
     if not force_lang_instruction:
         return user_text
@@ -145,9 +135,7 @@ def add_language_instruction(user_text: str) -> str:
     return f"{user_text}\n\n{instructions.get(language, instructions['English'])}"
 
 
-
 # Modification: Voice output (TTS)
-
 def tts_to_wav_bytes(text: str) -> bytes:
     engine = pyttsx3.init()
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
@@ -165,9 +153,7 @@ def tts_to_wav_bytes(text: str) -> bytes:
             pass
 
 
-
 # Modification: Voice input (mic -> whisper)
-
 def audio_bytes_to_wav_file(audio_bytes: bytes) -> str:
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
         f.write(audio_bytes)
@@ -187,8 +173,10 @@ def transcribe_audio_whisper(audio_bytes: bytes) -> str:
 
 
 
-# Upload multiple files
+# MAIN PAGE: Upload + Chat
 
+
+st.subheader("Upload files")
 uploaded_files = st.file_uploader(
     "Upload files (PDF, DOCX, TXT, CSV)",
     type=["pdf", "docx", "txt", "csv"],
@@ -196,9 +184,7 @@ uploaded_files = st.file_uploader(
 )
 
 
-
-# Load and process multiple files (RAG index)  uses embedding above
-
+# Load and process multiple files (RAG index) uses embedding above
 @st.cache_resource
 def load_files(files):
     if not files:
@@ -223,7 +209,7 @@ def load_files(files):
             loaders.append(CSVLoader(temp_path))
 
     index = VectorstoreIndexCreator(
-        embedding=embedding,  #  device-aware embedding
+        embedding=embedding,  # device-aware embedding
         text_splitter=RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50),
     ).from_loaders(loaders)
 
@@ -232,13 +218,16 @@ def load_files(files):
 
 if uploaded_files:
     index, temp_files = load_files(uploaded_files)
+    st.success(f"{len(uploaded_files)} file(s) loaded. You can ask questions now.")
 else:
     index, temp_files = None, []
+    st.info("Upload files to start querying.")
 
 
+st.divider()
+st.subheader("Chat")
 
 # Chat state
-
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -246,9 +235,7 @@ for message in st.session_state.messages:
     st.chat_message(message["role"]).markdown(message["content"])
 
 
-
 # Main Q/A chain
-
 if index:
     chain = RetrievalQA.from_chain_type(
         llm=llm,
@@ -262,7 +249,7 @@ if index:
         st.caption("🎙️ Voice Input")
         mic_result = mic_recorder(
             start_prompt="🎤 Start Recording",
-            stop_prompt=" Stop",
+            stop_prompt="Stop",
             key="mic"
         )
 
@@ -270,7 +257,7 @@ if index:
             with st.spinner("Transcribing audio..."):
                 voice_text = transcribe_audio_whisper(mic_result["bytes"])
             if voice_text:
-                st.success("Transcription ready ")
+                st.success("Transcription ready")
                 st.write(voice_text)
 
     prompt = st.chat_input("Enter your prompt (or use voice input)")
@@ -300,9 +287,8 @@ else:
     st.warning("Please upload files to start querying.")
 
 
-
 # Clear All
-
+st.divider()
 col1, col2 = st.columns([1, 3])
 with col1:
     if st.button("Clear All"):
