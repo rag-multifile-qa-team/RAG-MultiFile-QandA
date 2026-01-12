@@ -70,7 +70,7 @@ The original project has been **significantly extended and refactored** with the
 - Improved Streamlit UI and interaction flow
 - Refactored RAG pipeline and prompt handling
 - How to Run the Project:
-  1-) Firstly "cd RAG-MultiFile-QA" command in terminal for moving into the correct project directory
+  1-) Firstly "cd RAG-MultiFile-QandA" command in terminal for moving into the correct project directory
   2-) Secondly "streamlit run main.py" command in terminal for launching the Streamlit web application
 
 
