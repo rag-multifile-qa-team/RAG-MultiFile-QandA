@@ -45,6 +45,10 @@ This project is a **Streamlit-based Q&A application** that allows users to uploa
 - The system works best with **structured documents** containing well-defined sections and tables.
 - **FAISS indexing** helps in faster search and retrieval from large documents.
 
+## Execution Requirements
+
+-This project is designed to run locally as a Streamlit web application. It requires Ollama to be installed and running on the local machine to perform Large Language Model inference. The default model used in this project is gemma3:4b, and the Ollama server is expected to be accessible at http://localhost:11434 during execution.
+
 ## 📜 License
 This project is **open-source** and available under the **MIT License**.
 
